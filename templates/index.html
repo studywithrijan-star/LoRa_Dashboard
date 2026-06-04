@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LoRa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav>
+    <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+    <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
+    <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+    <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+</nav>
+
+
+<!-- Intro Section -->
+<section class="intro-section">
+    <div class="left">
+        <h1>Multiple Access Using LoRa</h1>
+        <p>This project monitors temperature, humidity, and pressure from multiple LoRa nodes and visualizes it in real-time on a web dashboard.</p>
+    </div>
+    
+    <div class="right">
+        <h2>Welcome!</h2>
+        <p>Click on the LoRa Dashboard to view live data or History to see past records from each node.</p>
+    </div>
+</section>
+
+<!-- <div style="height: 1px;"></div> -->
+
+<!-- Meet the Team Section -->
+<section class="team-section hidden">
+    <h2>Meet the Team</h2>
+    <div class="team-container">
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='photo1.jpg') }}" alt="Member 1">
+            <div class="team-info">
+                <h3>Abhinav Maharjan</h3>
+                <p>780404</p>
+                <p>maharjanabhinav551@gmail.com</p>
+            </div>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='photo2.jpg') }}" alt="Member 2">
+            <div class="team-info">
+                <h3>Rijan Shrestha</h3>
+                <p>780411</p>
+                <p>stharijan95@gmail.com</p>
+            </div>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='photo3.jpg') }}" alt="Member 3">
+            <div class="team-info">
+                <h3>Rojan Maharjan</h3>
+                <p>780412</p>
+                <p>rojanmhj120@gmail.com</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<script src="{{ url_for('static', filename='scroll.js') }}"></script>
+</body>
+</html>

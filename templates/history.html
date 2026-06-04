@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LoRa Dashboard History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+             
+        .history-container {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .tab-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-buttons button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            background: #1e293b;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tab-buttons button.active {
+            background: #3b82f6;
+        }
+
+        .tab-buttons button:hover {
+            background: #2563eb;
+        }
+
+        .iframe-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        iframe {
+            width: 100%;
+            min-width: 1200px; /* natural width of Google Sheet */
+            height: 80vh;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            iframe { min-width: 900px; height: 70vh; }
+        }
+
+        @media (max-width: 480px) {
+            iframe { min-width: 700px; height: 60vh; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+    <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
+    <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+    <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+</nav>
+
+
+<div class="history-container">
+    <h1>Node History</h1>
+    <p>Click a node to view its historical data:</p>
+
+    <div class="tab-buttons">
+        <button class="tab-btn active" data-node="1">Node 1</button>
+        <button class="tab-btn" data-node="2">Node 2</button>
+        <button class="tab-btn" data-node="3">Node 3</button>
+    </div>
+
+    <div class="iframe-wrapper">
+        <iframe id="sheetFrame" src=""></iframe>
+    </div>
+</div>
+
+<script>
+    const buttons = document.querySelectorAll(".tab-btn");
+    const sheetFrame = document.getElementById("sheetFrame");
+
+    const SHEET_URLS = {
+        "1": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf9eHOOMYa1xNep1jBvWBU9GHMcE81Nam6NAQLRck5Kz7gIPK8BwYaClWnxrT__wmOiSNrn6KEcAl/pubhtml?gid=0&single=true",
+        "2": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf9eHOOMYa1xNep1jBvWBU9GHMcE81Nam6NAQLRck5Kz7gIPK8BwYaClWnxrT__wmOiSNrn6KEcAl/pubhtml?gid=2142590311&single=true",
+        "3": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf9eHOOMYa1xNep1jBvWBU9GHMcE81Nam6NAQLRck5Kz7gIPK8BwYaClWnxrT__wmOiSNrn6KEcAl/pubhtml?gid=779849728&single=true"
+    };
+
+    function activateTab(node) {
+        // Set active button
+        buttons.forEach(btn => btn.classList.remove("active"));
+        document.querySelector(`.tab-btn[data-node="${node}"]`).classList.add("active");
+
+        // Force iframe to reload latest sheet with cache-busting
+        sheetFrame.src = SHEET_URLS[node] + "&t=" + new Date().getTime();
+    }
+
+    buttons.forEach(btn => {
+        btn.addEventListener("click", () => activateTab(btn.dataset.node));
+    });
+
+    // Load default Node 1
+    activateTab("1");
+
+    // Optional: auto-refresh every 60 seconds
+    setInterval(() => {
+        const activeNode = document.querySelector(".tab-btn.active").dataset.node;
+        activateTab(activeNode);
+    }, 60000);
+</script>
+
+</body>
+</html>

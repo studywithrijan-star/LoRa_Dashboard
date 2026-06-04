@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LoRa Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav>
+    <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+    <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
+    <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+    <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+</nav>
+
+
+<h1 style="text-align:center; margin-top:20px;">LoRa Dashboard</h1>
+
+<div class="main-container">
+
+    <!-- LEFT SIDE – Charts -->
+    <div class="charts-section">
+
+        <div class="node-card">
+            <h3>Node 1</h3>
+            <canvas id="node1Temp"></canvas>
+        </div>
+
+        <div class="node-card">
+            <h3>Node 1</h3>
+            <canvas id="node1Hum"></canvas>
+        </div>
+
+        <div class="node-card">
+            <h3>Node 2</h3>
+            <canvas id="node2Temp"></canvas>
+        </div>
+
+        <div class="node-card">
+            <h3>Node 2</h3>
+            <canvas id="node2Press"></canvas>
+        </div>
+
+        <div class="node-card">
+            <h3>Node 3</h3>
+            <canvas id="node3Temp"></canvas>
+        </div>
+
+        <div class="node-card">
+            <h3>Node 3</h3>
+            <canvas id="node3Hum"></canvas>
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE – Latest Readings -->
+    <div class="latest-section">
+
+        <h2>Latest Readings</h2>
+
+        <div class="latest-card">
+            <h3>Node 1</h3>
+            <div class="reading-row">
+                <i class="temp-icon fas fa-thermometer-half"></i>
+                <div>
+                    <div class="reading-value" id="node1TempLatest">--</div>
+                    <div class="reading-label">Temperature (°C)</div>
+                </div>
+            </div>
+            <div class="reading-row">
+                <i class="hum-icon fas fa-tint"></i>
+                <div>
+                    <div class="reading-value" id="node1HumLatest">--</div>
+                    <div class="reading-label">Humidity (%)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="latest-card">
+            <h3>Node 2</h3>
+            <div class="reading-row">
+                <i class="temp-icon fas fa-thermometer-half"></i>
+                <div>
+                    <div class="reading-value" id="node2TempLatest">--</div>
+                    <div class="reading-label">Temperature (°C)</div>
+                </div>
+            </div>
+            <div class="reading-row">
+                <i class="press-icon fas fa-tachometer-alt"></i>
+                <div>
+                    <div class="reading-value" id="node2PressLatest">--</div>
+                    <div class="reading-label">Pressure (hPa)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="latest-card">
+            <h3>Node 3</h3>
+            <div class="reading-row">
+                <i class="temp-icon fas fa-thermometer-half"></i>
+                <div>
+                    <div class="reading-value" id="node3TempLatest">--</div>
+                    <div class="reading-label">Temperature (°C)</div>
+                </div>
+            </div>
+            <div class="reading-row">
+                <i class="hum-icon fas fa-tint"></i>
+                <div>
+                    <div class="reading-value" id="node3HumLatest">--</div>
+                    <div class="reading-label">Humidity (%)</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+
+</body>
+</html>
