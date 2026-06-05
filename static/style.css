@@ -120,11 +120,17 @@ nav a {
 }
 
 /* LEFT SIDE */
-.charts-section {
-    flex: 2;
+.analysis-container .charts-section {
+    width: 75%;
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 20px;
+}
+.summary-section {
+     width: 25%;
+    background: #f1f5f9;
+    padding: 15px;
+    border-radius: 10px;
 }
 
 /* RIGHT SIDE */
