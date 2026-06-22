@@ -6,9 +6,9 @@ app = Flask(__name__)
 # -------------------------
 # Google Sheet CSV URLs
 # -------------------------
-SHEET_URL_NODE1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf9eHOOMYa1xNep1jBvWBU9GHMcE81Nam6NAQLRck5Kz7gIPK8BwYaClWnxrT__wmOiSNrn6KEcAl/pub?gid=0&single=true&output=csv"
-SHEET_URL_NODE2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf9eHOOMYa1xNep1jBvWBU9GHMcE81Nam6NAQLRck5Kz7gIPK8BwYaClWnxrT__wmOiSNrn6KEcAl/pub?gid=2142590311&single=true&output=csv"
-SHEET_URL_NODE3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf9eHOOMYa1xNep1jBvWBU9GHMcE81Nam6NAQLRck5Kz7gIPK8BwYaClWnxrT__wmOiSNrn6KEcAl/pub?gid=779849728&single=true&output=csv"
+SHEET_URL_NODE1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdE_ypjaSCAc58yEAkoGoCG12jR7h2aSh-MB1SQiOXZuo-NpS-VB28hvDVTPXa_lUJb1KoJxHRUNSy/pub?gid=0&single=true&output=csv"
+SHEET_URL_NODE2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdE_ypjaSCAc58yEAkoGoCG12jR7h2aSh-MB1SQiOXZuo-NpS-VB28hvDVTPXa_lUJb1KoJxHRUNSy/pub?gid=1418193114&single=true&output=csv"
+SHEET_URL_NODE3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdE_ypjaSCAc58yEAkoGoCG12jR7h2aSh-MB1SQiOXZuo-NpS-VB28hvDVTPXa_lUJb1KoJxHRUNSy/pub?gid=210587079&single=true&output=csv"
 
 # -------------------------
 # Function to fetch CSV and parse

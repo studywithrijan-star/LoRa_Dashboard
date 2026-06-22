@@ -18,7 +18,7 @@ function animateValue(id, newValue) {
     const increment = (target - current) / steps;
     const interval = setInterval(() => {
         step++;
-        element.innerText = (current + increment * step).toFixed(1);
+        element.innerText = Math.round(current + increment * step);
         if (step >= steps) clearInterval(interval);
     }, stepTime);
 }
@@ -46,7 +46,10 @@ function createChart(ctx, label, color, yLabel) {
                     ticks: { autoSkip: true, maxRotation: 0, minRotation: 0 }
                 },
                 y: {
-                    title: { display: true, text: yLabel }
+                    title: { display: true, text: yLabel },
+                    ticks: {
+                        callback: value => Math.round(value)
+                    }
                 }
             }
         }
@@ -74,7 +77,7 @@ async function updateChart(url, chart, key, chartName, yLabel, latestId) {
 
         if (lastPacket[chartName]) {
             startIndex = data.findIndex(r => r.TX_Time > lastPacket[chartName]);
-            if (startIndex === -1) return; // no new data
+            if (startIndex === -1) return;
         }
 
         const newData = data.slice(startIndex);
@@ -88,7 +91,7 @@ async function updateChart(url, chart, key, chartName, yLabel, latestId) {
         );
 
         chart.data.datasets[0].data = chart.data.datasets[0].data.concat(
-            newData.map(r => r[key])
+            newData.map(r => Math.round(r[key]))
         );
 
         // Keep only last 10 readings
