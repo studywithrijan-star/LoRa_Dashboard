@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
-        
         h1 { text-align: center; margin-top: 20px; }
         .tab-buttons { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
         .tab-buttons button { padding: 10px 20px; font-size: 1rem; border: none; background: #1e293b; color: white; border-radius: 8px; cursor: pointer; transition: 0.3s; }
@@ -20,7 +19,29 @@
         .chart-card canvas { height: 220px !important; }
         .summary-section { flex: 1; background: #f1f5f9; border-radius: 10px; padding: 15px; height: fit-content; }
         .summary-section h3 { text-align: center; margin-bottom: 15px; }
-        .summary-item { display: flex; justify-content: space-between; padding: 6px 0; font-weight: bold; }
+        .summary-table { width: 100%; border-collapse: collapse; }
+        .summary-table th, .summary-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #cbd5e1;
+            border-right: 1px solid #cbd5e1;
+            font-size: 0.95rem;
+        }
+        .summary-table th { background: #1e293b; color: white; font-weight: 600; }
+        .summary-table tr:last-child td { border-bottom: none; }
+        .summary-table tr:hover td { background: #e2e8f0; }
+        .summary-table th:last-child {
+            border-right: none;
+            color: white;
+            text-align: center;
+        }
+        .summary-table td:last-child {
+            border-right: none;
+            font-weight: bold;
+            color: #1e293b;
+            text-align: center;
+        }
+        .loading { color: #94a3b8; font-style: italic; }
     </style>
 </head>
 <body>
@@ -31,7 +52,6 @@
     <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
     <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
 </nav>
-
 
 <h1>LoRa Node Performance Analysis</h1>
 
@@ -59,33 +79,75 @@
 
     <div class="summary-section">
         <h3>Node Summary</h3>
-        <div class="summary-item"><span>Packets Received:</span> <span id="packetsReceived">0</span></div>
-        <div class="summary-item"><span>Packets Lost:</span> <span id="packetsLost">0</span></div>
-        <div class="summary-item"><span>Packet Loss %:</span> <span id="packetLossPercent">0%</span></div>
-        <div class="summary-item"><span>Avg Delay (ms):</span> <span id="avgDelay">0</span></div>
-        <div class="summary-item"><span>Avg RSSI (dBm):</span> <span id="avgRssi">0</span></div>
-        <div class="summary-item"><span>Avg SNR (dB):</span> <span id="avgSnr">0</span></div>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Packets Received</td><td id="packetsReceived">0</td></tr>
+                <tr><td>Packets Lost</td><td id="packetsLost">0</td></tr>
+                <tr><td>Packet Loss %</td><td id="packetLossPercent">0%</td></tr>
+                <tr><td>Avg Delay (ms)</td><td id="avgDelay">0</td></tr>
+                <tr><td>Avg RSSI (dBm)</td><td id="avgRssi">0</td></tr>
+                <tr><td>Avg SNR (dB)</td><td id="avgSnr">0</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script>
     const buttons = document.querySelectorAll(".tab-btn");
     let currentNode = "1";
-
-    const delayCtx = document.getElementById("delayChart").getContext("2d");
-    const rssiCtx = document.getElementById("rssiChart").getContext("2d");
-    const snrCtx = document.getElementById("snrChart").getContext("2d");
-
-    let delayChart = new Chart(delayCtx, { type:'line', data:{labels:[], datasets:[{label:'Delay (ms)', data:[], borderColor:'#3b82f6', tension:0.2}]}, options:{responsive:true, maintainAspectRatio:false} });
-    let rssiChart = new Chart(rssiCtx, { type:'line', data:{labels:[], datasets:[{label:'RSSI (dBm)', data:[], borderColor:'#ef4444', tension:0.2}]}, options:{responsive:true, maintainAspectRatio:false} });
-    let snrChart = new Chart(snrCtx, { type:'line', data:{labels:[], datasets:[{label:'SNR (dB)', data:[], borderColor:'#10b981', tension:0.2}]}, options:{responsive:true, maintainAspectRatio:false} });
+    let delayChart, rssiChart, snrChart;
 
     function parseTime(hms) {
+        if (typeof hms !== 'string') return new Date(1970,0,1,0,0,0);
         const parts = hms.split(':').map(Number);
         return new Date(1970,0,1, parts[0]||0, parts[1]||0, parts[2]||0);
     }
 
+    function setLoading() {
+        ["packetsReceived","packetsLost","packetLossPercent","avgDelay","avgRssi","avgSnr"]
+            .forEach(id => {
+                const el = document.getElementById(id);
+                el.innerText = "...";
+                el.classList.add("loading");
+            });
+    }
+
+    function clearLoading() {
+        ["packetsReceived","packetsLost","packetLossPercent","avgDelay","avgRssi","avgSnr"]
+            .forEach(id => document.getElementById(id).classList.remove("loading"));
+    }
+
+    function createCharts() {
+        if (delayChart) delayChart.destroy();
+        if (rssiChart)  rssiChart.destroy();
+        if (snrChart)   snrChart.destroy();
+
+        delayChart = new Chart(document.getElementById("delayChart").getContext("2d"), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Delay (ms)', data: [], borderColor: '#3b82f6', tension: 0.2, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        rssiChart = new Chart(document.getElementById("rssiChart").getContext("2d"), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'RSSI (dBm)', data: [], borderColor: '#ef4444', tension: 0.2, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        snrChart = new Chart(document.getElementById("snrChart").getContext("2d"), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'SNR (dB)', data: [], borderColor: '#10b981', tension: 0.2, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
     function updateCharts(node) {
+        setLoading();
+
         fetch(`/api/node${node}`)
         .then(res => res.json())
         .then(data => {
@@ -93,27 +155,23 @@
 
             const labels = data.map(d => d.PacketNo);
 
-            // End-to-End Delay in ms
             const delayData = data.map(d => {
                 const tx = parseTime(d.TX_Time);
                 const rx = parseTime(d.RX_Time);
                 let diff = rx - tx;
-                if(diff < 0) diff += 24*60*60*1000; // handle day rollover
+                if (diff < 0) diff += 24*60*60*1000;
                 return diff;
             });
 
-            // RSSI & SNR
             const rssiData = data.map(d => Number(d.RSSI) || 0);
-            const snrData = data.map(d => Number(d.SNR) || 0);
+            const snrData  = data.map(d => Number(d.SNR)  || 0);
 
-            // Packet Loss Calculation
-            const packetNos = data.map(d => Number(d.PacketNo)).filter(n => !isNaN(n)).sort((a,b)=>a-b);
+            const packetNos = data.map(d => Number(d.PacketNo)).filter(n => !isNaN(n)).sort((a,b) => a-b);
             let lostPackets = 0;
-            for(let i=0; i<packetNos.length-1; i++){
-                lostPackets += Math.max(0, packetNos[i+1]-packetNos[i]-1);
+            for (let i = 0; i < packetNos.length - 1; i++) {
+                lostPackets += Math.max(0, packetNos[i+1] - packetNos[i] - 1);
             }
 
-            // Update charts
             delayChart.data.labels = labels;
             delayChart.data.datasets[0].data = delayData;
             delayChart.update();
@@ -126,34 +184,38 @@
             snrChart.data.datasets[0].data = snrData;
             snrChart.update();
 
-            // Summary
-            const packetsReceived = packetNos.length;
-            const packetLossPercent = ((lostPackets / (packetsReceived + lostPackets))*100).toFixed(2);
-            const avgDelay = (delayData.reduce((a,b)=>a+b,0)/packetsReceived).toFixed(2);
-            const avgRssi = (rssiData.reduce((a,b)=>a+b,0)/packetsReceived).toFixed(2);
-            const avgSnr = (snrData.reduce((a,b)=>a+b,0)/packetsReceived).toFixed(2);
+            const packetsReceived   = packetNos.length;
+            const packetLossPercent = ((lostPackets / (packetsReceived + lostPackets)) * 100).toFixed(2);
+            const avgDelay = (delayData.reduce((a,b) => a+b, 0) / packetsReceived).toFixed(2);
+            const avgRssi  = (rssiData.reduce((a,b)  => a+b, 0) / packetsReceived).toFixed(2);
+            const avgSnr   = (snrData.reduce((a,b)   => a+b, 0) / packetsReceived).toFixed(2);
 
-            document.getElementById("packetsReceived").innerText = packetsReceived;
-            document.getElementById("packetsLost").innerText = lostPackets;
+            clearLoading();
+            document.getElementById("packetsReceived").innerText   = packetsReceived;
+            document.getElementById("packetsLost").innerText       = lostPackets;
             document.getElementById("packetLossPercent").innerText = packetLossPercent + "%";
-            document.getElementById("avgDelay").innerText = avgDelay;
-            document.getElementById("avgRssi").innerText = avgRssi;
-            document.getElementById("avgSnr").innerText = avgSnr;
+            document.getElementById("avgDelay").innerText          = avgDelay;
+            document.getElementById("avgRssi").innerText           = avgRssi;
+            document.getElementById("avgSnr").innerText            = avgSnr;
 
-        }).catch(err => console.error(err));
+        }).catch(err => {
+            console.error(err);
+            clearLoading();
+        });
     }
 
     function activateTab(node) {
         buttons.forEach(btn => btn.classList.remove("active"));
         document.querySelector(`.tab-btn[data-node="${node}"]`).classList.add("active");
         currentNode = node;
+        createCharts();
         updateCharts(node);
     }
 
     buttons.forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.node)));
 
     activateTab(currentNode);
-    setInterval(()=>updateCharts(currentNode),15000);
+    setInterval(() => updateCharts(currentNode), 15000);
 </script>
 </body>
 </html>
