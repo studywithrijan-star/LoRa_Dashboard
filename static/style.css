@@ -26,8 +26,8 @@ nav a {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 80px 60px;
-    min-height: 85vh;
+    padding: 50px 60px;
+    min-height: unset;
     background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1e293b 100%);
     color: white;
 }
@@ -389,6 +389,9 @@ nav {
     align-items: center;
     background: linear-gradient(to right, #4e4376, #2b5876);
     padding: 12px 25px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
  
 .nav-links {
@@ -401,6 +404,7 @@ nav {
     font-size: 24px;
     cursor: pointer;
     color: white;
+    user-select: none;
 }
  
 nav a {
@@ -446,18 +450,6 @@ nav a {
     nav {
         flex-wrap: wrap;
         padding: 12px 16px;
-        gap: 0;
-    }
- 
-    /* Plain nav links (not .nav-links wrapper) stack vertically */
-    nav a:not(:first-child) {
-        display: none;
-    }
-    nav.open a {
-        display: block;
-        width: 100%;
-        padding: 10px 0;
-        border-top: 1px solid rgba(255,255,255,0.1);
     }
  
     .nav-links {
@@ -465,12 +457,18 @@ nav a {
         flex-direction: column;
         width: 100%;
         background: #2b5876;
-        position: absolute;
-        top: 60px;
-        left: 0;
-        padding: 15px 0;
+        padding: 8px 0;
+        margin-top: 8px;
+        border-radius: 8px;
     }
-    .nav-links a { padding: 10px 20px; }
+ 
+    .nav-links a {
+        padding: 10px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+ 
+    .nav-links a:last-child { border-bottom: none; }
+ 
     .nav-links.active { display: flex; }
  
     /* ── Hero ── */

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>LoRa Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%233b82f6'/><text x='50' y='67' text-anchor='middle' font-size='48' fill='white' font-family='Arial' font-weight='bold'>D</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -76,10 +77,13 @@
 
 <!-- ===== NAVBAR ===== -->
 <nav>
-    <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
-    <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
-    <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
-    <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+    <span class="menu-toggle" id="menuToggle">☰</span>
+    <div class="nav-links" id="navLinks">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+        <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
+        <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+        <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+    </div>
 </nav>
 
 <h1 style="text-align:center; margin-top:20px;">LoRa Dashboard</h1>
@@ -216,6 +220,17 @@
     </div>
 
 </div>
+
+<script>
+    document.getElementById("menuToggle").addEventListener("click", function() {
+        document.getElementById("navLinks").classList.toggle("active");
+    });
+    document.querySelectorAll(".nav-links a").forEach(link => {
+        link.addEventListener("click", () => {
+            document.getElementById("navLinks").classList.remove("active");
+        });
+    });
+</script>
 
 <!-- ONE script only. All logic is in dashboard.js -->
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>

@@ -22,10 +22,13 @@
 <body>
 
 <nav>
-    <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
-    <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
-    <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
-    <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+    <span class="menu-toggle" id="menuToggle">☰</span>
+    <div class="nav-links" id="navLinks">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+        <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">LoRa Dashboard</a>
+        <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+        <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
+    </div>
 </nav>
 
 <!-- ===== HERO SECTION ===== -->
@@ -219,6 +222,17 @@
         L.marker([node.lat, node.lng], { icon: node.icon })
             .addTo(map)
             .bindPopup(`<b>${node.label}</b>`);
+    });
+</script>
+<script>
+    document.getElementById("menuToggle").addEventListener("click", function() {
+        document.getElementById("navLinks").classList.toggle("active");
+    });
+    // Close menu when a link is clicked
+    document.querySelectorAll(".nav-links a").forEach(link => {
+        link.addEventListener("click", () => {
+            document.getElementById("navLinks").classList.remove("active");
+        });
     });
 </script>
 </body>
