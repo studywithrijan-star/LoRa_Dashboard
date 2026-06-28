@@ -30,18 +30,54 @@
         .summary-table th { background: #1e293b; color: white; font-weight: 600; }
         .summary-table tr:last-child td { border-bottom: none; }
         .summary-table tr:hover td { background: #e2e8f0; }
-        .summary-table th:last-child {
-            border-right: none;
-            color: white;
-            text-align: center;
-        }
-        .summary-table td:last-child {
-            border-right: none;
-            font-weight: bold;
-            color: #1e293b;
-            text-align: center;
-        }
+        .summary-table th:last-child { border-right: none; color: white; text-align: center; }
+        .summary-table td:last-child { border-right: none; font-weight: bold; color: #1e293b; text-align: center; }
+
+        /* ── Loading spinner ────────────────────────────────── */
         .loading { color: #94a3b8; font-style: italic; }
+
+        /* ── Empty state (no data for this node) ────────────── */
+        .empty-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            color: #64748b;
+        }
+        .empty-state .es-icon { font-size: 2.6rem; opacity: 0.5; }
+        .empty-state h3 { font-size: 1.05rem; margin: 0; color: #475569; }
+        .empty-state p  { font-size: 0.84rem; margin: 0; max-width: 300px; line-height: 1.5; }
+
+        /* ── Chart empty-state overlay ───────────────────────── */
+        .chart-wrap { position: relative; }
+        .chart-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: rgba(241, 245, 249, 0.82);
+            border-radius: 8px;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-style: italic;
+            pointer-events: none;
+            transition: opacity 0.35s;
+        }
+        .chart-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        /* ── Packet-loss colour coding ───────────────────────── */
+        .loss-good  { color: #16a34a !important; }   /* < 5 %  */
+        .loss-warn  { color: #d97706 !important; }   /* 5–20 % */
+        .loss-bad   { color: #dc2626 !important; }   /* > 20 % */
+
+        /* ── Stat placeholder dash ───────────────────────────── */
+        .stat-dash { color: #94a3b8; font-weight: 400; font-style: italic; }
     </style>
 </head>
 <body>
@@ -61,20 +97,41 @@
     <button class="tab-btn" data-node="3">Node 3</button>
 </div>
 
-<div class="container">
+<!-- Empty state (shown when node has no data) -->
+<div class="empty-state" id="emptyState">
+    <div class="es-icon">📭</div>
+    <h3>No data to analyse yet</h3>
+    <p>This node hasn't transmitted any packets.<br>
+       Power on the hardware and wait for the first reading.</p>
+</div>
+
+<div class="container" id="mainContainer">
     <div class="analysis-charts">
+
         <div class="chart-card">
             <h3>End-to-End Delay (ms)</h3>
-            <canvas id="delayChart"></canvas>
+            <div class="chart-wrap">
+                <canvas id="delayChart"></canvas>
+                <div class="chart-overlay" id="overlay-delay">📡 No delay data yet</div>
+            </div>
         </div>
+
         <div class="chart-card">
             <h3>RSSI (dBm)</h3>
-            <canvas id="rssiChart"></canvas>
+            <div class="chart-wrap">
+                <canvas id="rssiChart"></canvas>
+                <div class="chart-overlay" id="overlay-rssi">📡 No RSSI data yet</div>
+            </div>
         </div>
+
         <div class="chart-card">
             <h3>SNR (dB)</h3>
-            <canvas id="snrChart"></canvas>
+            <div class="chart-wrap">
+                <canvas id="snrChart"></canvas>
+                <div class="chart-overlay" id="overlay-snr">📡 No SNR data yet</div>
+            </div>
         </div>
+
     </div>
 
     <div class="summary-section">
@@ -87,12 +144,12 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td>Packets Received</td><td id="packetsReceived">0</td></tr>
-                <tr><td>Packets Lost</td><td id="packetsLost">0</td></tr>
-                <tr><td>Packet Loss %</td><td id="packetLossPercent">0%</td></tr>
-                <tr><td>Avg Delay (ms)</td><td id="avgDelay">0</td></tr>
-                <tr><td>Avg RSSI (dBm)</td><td id="avgRssi">0</td></tr>
-                <tr><td>Avg SNR (dB)</td><td id="avgSnr">0</td></tr>
+                <tr><td>Packets Received</td><td id="packetsReceived" class="stat-dash">—</td></tr>
+                <tr><td>Packets Lost</td>    <td id="packetsLost"     class="stat-dash">—</td></tr>
+                <tr><td>Packet Loss %</td>   <td id="packetLossPercent" class="stat-dash">—</td></tr>
+                <tr><td>Avg Delay (ms)</td>  <td id="avgDelay"        class="stat-dash">—</td></tr>
+                <tr><td>Avg RSSI (dBm)</td>  <td id="avgRssi"         class="stat-dash">—</td></tr>
+                <tr><td>Avg SNR (dB)</td>    <td id="avgSnr"          class="stat-dash">—</td></tr>
             </tbody>
         </table>
     </div>
@@ -103,75 +160,128 @@
     let currentNode = "1";
     let delayChart, rssiChart, snrChart;
 
+    // ── helpers ────────────────────────────────────────────────────
     function parseTime(hms) {
-        if (typeof hms !== 'string') return new Date(1970,0,1,0,0,0);
+        if (typeof hms !== 'string') return new Date(1970, 0, 1, 0, 0, 0);
         const parts = hms.split(':').map(Number);
-        return new Date(1970,0,1, parts[0]||0, parts[1]||0, parts[2]||0);
+        return new Date(1970, 0, 1, parts[0] || 0, parts[1] || 0, parts[2] || 0);
     }
+
+    const STAT_IDS = ["packetsReceived", "packetsLost", "packetLossPercent", "avgDelay", "avgRssi", "avgSnr"];
 
     function setLoading() {
-        ["packetsReceived","packetsLost","packetLossPercent","avgDelay","avgRssi","avgSnr"]
-            .forEach(id => {
-                const el = document.getElementById(id);
-                el.innerText = "...";
-                el.classList.add("loading");
-            });
+        STAT_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            el.innerText = "…";
+            el.className = "loading";
+        });
     }
 
-    function clearLoading() {
-        ["packetsReceived","packetsLost","packetLossPercent","avgDelay","avgRssi","avgSnr"]
-            .forEach(id => document.getElementById(id).classList.remove("loading"));
+    function resetStats() {
+        STAT_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            el.innerText = "—";
+            el.className = "stat-dash";
+        });
     }
 
+    function showEmpty(show) {
+        document.getElementById("emptyState").style.display   = show ? "flex"  : "none";
+        document.getElementById("mainContainer").style.display = show ? "none"  : "flex";
+    }
+
+    function hideOverlay(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add("hidden");
+    }
+
+    function showOverlay(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove("hidden");
+    }
+
+    function setLossColor(el, pct) {
+        el.classList.remove("loss-good", "loss-warn", "loss-bad");
+        if      (pct < 5)  el.classList.add("loss-good");
+        else if (pct < 20) el.classList.add("loss-warn");
+        else               el.classList.add("loss-bad");
+    }
+
+    // ── chart init ─────────────────────────────────────────────────
     function createCharts() {
         if (delayChart) delayChart.destroy();
         if (rssiChart)  rssiChart.destroy();
         if (snrChart)   snrChart.destroy();
 
+        const commonOpts = { responsive: true, maintainAspectRatio: false };
+
         delayChart = new Chart(document.getElementById("delayChart").getContext("2d"), {
             type: 'line',
             data: { labels: [], datasets: [{ label: 'Delay (ms)', data: [], borderColor: '#3b82f6', tension: 0.2, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: commonOpts
         });
         rssiChart = new Chart(document.getElementById("rssiChart").getContext("2d"), {
             type: 'line',
             data: { labels: [], datasets: [{ label: 'RSSI (dBm)', data: [], borderColor: '#ef4444', tension: 0.2, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: commonOpts
         });
         snrChart = new Chart(document.getElementById("snrChart").getContext("2d"), {
             type: 'line',
             data: { labels: [], datasets: [{ label: 'SNR (dB)', data: [], borderColor: '#10b981', tension: 0.2, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: commonOpts
         });
+
+        // Reset overlays whenever charts are recreated
+        showOverlay("overlay-delay");
+        showOverlay("overlay-rssi");
+        showOverlay("overlay-snr");
     }
 
+    // ── main fetch + render ────────────────────────────────────────
     function updateCharts(node) {
         setLoading();
 
         fetch(`/api/node${node}`)
         .then(res => res.json())
         .then(data => {
-            if (!data || data.length === 0) return;
 
+            // ── No data → show empty state ─────────────────────────
+            if (!data || data.length === 0) {
+                showEmpty(true);
+                resetStats();
+                return;
+            }
+
+            showEmpty(false);
+
+            // ── Compute values (same logic as original) ────────────
             const labels = data.map(d => d.PacketNo);
 
             const delayData = data.map(d => {
                 const tx = parseTime(d.TX_Time);
                 const rx = parseTime(d.RX_Time);
                 let diff = rx - tx;
-                if (diff < 0) diff += 24*60*60*1000;
+                if (diff < 0) diff += 24 * 60 * 60 * 1000;
                 return diff;
             });
 
             const rssiData = data.map(d => Number(d.RSSI) || 0);
             const snrData  = data.map(d => Number(d.SNR)  || 0);
 
-            const packetNos = data.map(d => Number(d.PacketNo)).filter(n => !isNaN(n)).sort((a,b) => a-b);
+            const packetNos = data.map(d => Number(d.PacketNo)).filter(n => !isNaN(n)).sort((a, b) => a - b);
             let lostPackets = 0;
             for (let i = 0; i < packetNos.length - 1; i++) {
-                lostPackets += Math.max(0, packetNos[i+1] - packetNos[i] - 1);
+                lostPackets += Math.max(0, packetNos[i + 1] - packetNos[i] - 1);
             }
 
+            const packetsReceived   = packetNos.length;
+            const totalPackets      = packetsReceived + lostPackets;
+            const packetLossPct     = totalPackets > 0 ? (lostPackets / totalPackets) * 100 : 0;
+            const avgDelay          = (delayData.reduce((a, b) => a + b, 0) / packetsReceived).toFixed(2);
+            const avgRssi           = (rssiData.reduce((a, b)  => a + b, 0) / packetsReceived).toFixed(2);
+            const avgSnr            = (snrData.reduce((a, b)   => a + b, 0) / packetsReceived).toFixed(2);
+
+            // ── Update charts ──────────────────────────────────────
             delayChart.data.labels = labels;
             delayChart.data.datasets[0].data = delayData;
             delayChart.update();
@@ -184,26 +294,40 @@
             snrChart.data.datasets[0].data = snrData;
             snrChart.update();
 
-            const packetsReceived   = packetNos.length;
-            const packetLossPercent = ((lostPackets / (packetsReceived + lostPackets)) * 100).toFixed(2);
-            const avgDelay = (delayData.reduce((a,b) => a+b, 0) / packetsReceived).toFixed(2);
-            const avgRssi  = (rssiData.reduce((a,b)  => a+b, 0) / packetsReceived).toFixed(2);
-            const avgSnr   = (snrData.reduce((a,b)   => a+b, 0) / packetsReceived).toFixed(2);
+            // Hide overlays now that charts have real data
+            if (delayData.some(v => v > 0)) hideOverlay("overlay-delay");
+            if (rssiData.some(v => v !== 0)) hideOverlay("overlay-rssi");
+            if (snrData.some(v => v !== 0))  hideOverlay("overlay-snr");
 
-            clearLoading();
+            // ── Update summary table ───────────────────────────────
+            const lossEl = document.getElementById("packetLossPercent");
+
             document.getElementById("packetsReceived").innerText   = packetsReceived;
             document.getElementById("packetsLost").innerText       = lostPackets;
-            document.getElementById("packetLossPercent").innerText = packetLossPercent + "%";
+            lossEl.innerText                                        = packetLossPct.toFixed(2) + "%";
             document.getElementById("avgDelay").innerText          = avgDelay;
             document.getElementById("avgRssi").innerText           = avgRssi;
             document.getElementById("avgSnr").innerText            = avgSnr;
 
-        }).catch(err => {
+            // Remove placeholder dash class from all stat cells
+            STAT_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.remove("stat-dash", "loading");
+            });
+
+            // Color-code packet loss
+            setLossColor(lossEl, packetLossPct);
+
+        })
+        .catch(err => {
             console.error(err);
-            clearLoading();
+            // On error just show empty state rather than stale zeros
+            showEmpty(true);
+            resetStats();
         });
     }
 
+    // ── tab switching ──────────────────────────────────────────────
     function activateTab(node) {
         buttons.forEach(btn => btn.classList.remove("active"));
         document.querySelector(`.tab-btn[data-node="${node}"]`).classList.add("active");
@@ -214,6 +338,7 @@
 
     buttons.forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.node)));
 
+    // ── init ───────────────────────────────────────────────────────
     activateTab(currentNode);
     setInterval(() => updateCharts(currentNode), 15000);
 </script>

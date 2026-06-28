@@ -5,8 +5,72 @@
     <title>LoRa Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ── Status Badge ───────────────────────────────────────── */
+        .node-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 20px;
+            margin-left: 8px;
+            vertical-align: middle;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .node-status.live {
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.35);
+        }
+        .node-status.offline {
+            background: rgba(239, 68, 68, 0.10);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+        .node-status .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .node-status.live .dot { animation: blink 1.8s infinite; }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.25; }
+        }
+
+        /* ── Last-updated line ──────────────────────────────────── */
+        .last-updated {
+            font-size: 0.70rem;
+            color: #94a3b8;
+            font-style: italic;
+            margin-top: 6px;
+        }
+
+        /* ── Chart empty overlay ────────────────────────────────── */
+        .chart-wrap { position: relative; }
+        .chart-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: rgba(241, 245, 249, 0.80);
+            border-radius: 8px;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-style: italic;
+            pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        .chart-overlay.hidden { opacity: 0; }
+    </style>
 </head>
 <body>
 
@@ -18,7 +82,6 @@
     <a href="/analysis" class="{% if request.path == '/analysis' %}active{% endif %}">Analysis</a>
 </nav>
 
-
 <h1 style="text-align:center; margin-top:20px;">LoRa Dashboard</h1>
 
 <div class="main-container">
@@ -27,44 +90,70 @@
     <div class="charts-section">
 
         <div class="node-card">
-            <h3>Node 1</h3>
-            <canvas id="node1Temp"></canvas>
+            <h3>Node 1
+                <span id="status-badge-1" class="node-status offline"><span class="dot"></span>Offline</span>
+            </h3>
+            <div class="chart-wrap">
+                <canvas id="node1Temp"></canvas>
+                <div class="chart-overlay" id="overlay-node1Temp">📡 Waiting for data…</div>
+            </div>
         </div>
 
         <div class="node-card">
             <h3>Node 1</h3>
-            <canvas id="node1Hum"></canvas>
+            <div class="chart-wrap">
+                <canvas id="node1Hum"></canvas>
+                <div class="chart-overlay" id="overlay-node1Hum">📡 Waiting for data…</div>
+            </div>
+        </div>
+
+        <div class="node-card">
+            <h3>Node 2
+                <span id="status-badge-2" class="node-status offline"><span class="dot"></span>Offline</span>
+            </h3>
+            <div class="chart-wrap">
+                <canvas id="node2Temp"></canvas>
+                <div class="chart-overlay" id="overlay-node2Temp">📡 Waiting for data…</div>
+            </div>
         </div>
 
         <div class="node-card">
             <h3>Node 2</h3>
-            <canvas id="node2Temp"></canvas>
+            <div class="chart-wrap">
+                <canvas id="node2Press"></canvas>
+                <div class="chart-overlay" id="overlay-node2Press">📡 Waiting for data…</div>
+            </div>
         </div>
 
         <div class="node-card">
-            <h3>Node 2</h3>
-            <canvas id="node2Press"></canvas>
+            <h3>Node 3
+                <span id="status-badge-3" class="node-status offline"><span class="dot"></span>Offline</span>
+            </h3>
+            <div class="chart-wrap">
+                <canvas id="node3Temp"></canvas>
+                <div class="chart-overlay" id="overlay-node3Temp">📡 Waiting for data…</div>
+            </div>
         </div>
 
         <div class="node-card">
             <h3>Node 3</h3>
-            <canvas id="node3Temp"></canvas>
-        </div>
-
-        <div class="node-card">
-            <h3>Node 3</h3>
-            <canvas id="node3Hum"></canvas>
+            <div class="chart-wrap">
+                <canvas id="node3Hum"></canvas>
+                <div class="chart-overlay" id="overlay-node3Hum">📡 Waiting for data…</div>
+            </div>
         </div>
 
     </div>
 
-    <!-- RIGHT SIDE – Latest Readings -->
+    <!-- RIGHT SIDE – Latest Readings (original structure, no changes) -->
     <div class="latest-section">
 
         <h2>Latest Readings</h2>
 
         <div class="latest-card">
-            <h3>Node 1</h3>
+            <h3>Node 1
+                <span id="status-badge-1b" class="node-status offline"><span class="dot"></span>Offline</span>
+            </h3>
             <div class="reading-row">
                 <i class="temp-icon fas fa-thermometer-half"></i>
                 <div>
@@ -79,10 +168,13 @@
                     <div class="reading-label">Humidity (%)</div>
                 </div>
             </div>
+            <div class="last-updated" id="last-updated-1">Waiting for first reading…</div>
         </div>
 
         <div class="latest-card">
-            <h3>Node 2</h3>
+            <h3>Node 2
+                <span id="status-badge-2b" class="node-status offline"><span class="dot"></span>Offline</span>
+            </h3>
             <div class="reading-row">
                 <i class="temp-icon fas fa-thermometer-half"></i>
                 <div>
@@ -97,10 +189,13 @@
                     <div class="reading-label">Pressure (hPa)</div>
                 </div>
             </div>
+            <div class="last-updated" id="last-updated-2">Waiting for first reading…</div>
         </div>
 
         <div class="latest-card">
-            <h3>Node 3</h3>
+            <h3>Node 3
+                <span id="status-badge-3b" class="node-status offline"><span class="dot"></span>Offline</span>
+            </h3>
             <div class="reading-row">
                 <i class="temp-icon fas fa-thermometer-half"></i>
                 <div>
@@ -115,12 +210,14 @@
                     <div class="reading-label">Humidity (%)</div>
                 </div>
             </div>
+            <div class="last-updated" id="last-updated-3">Waiting for first reading…</div>
         </div>
 
     </div>
 
 </div>
 
+<!-- ONE script only. All logic is in dashboard.js -->
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 
 </body>

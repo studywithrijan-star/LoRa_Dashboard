@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>LoRa</title>
+    <!-- ✅ CHANGE 1: Favicon added -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%233b82f6'/><text x='50' y='67' text-anchor='middle' font-size='48' fill='white' font-family='Arial' font-weight='bold'>L</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* ✅ CHANGE 2: Simple footer */
+        .site-footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 1px solid #1e293b;
+            color: #475569;
+            font-size: 0.82rem;
+        }
+    </style>
 </head>
 <body>
 
@@ -149,7 +162,7 @@
             <div class="team-info">
                 <h3>Abhinav Maharjan</h3>
                 <p>780404</p>
-                <p>maharjanabhinav551@gmail.com</p>
+                <!-- ✅ CHANGE 3: Email removed for privacy -->
             </div>
         </div>
         <div class="team-member">
@@ -157,7 +170,7 @@
             <div class="team-info">
                 <h3>Rijan Shrestha</h3>
                 <p>780411</p>
-                <p>stharijan95@gmail.com</p>
+                <!-- ✅ CHANGE 3: Email removed for privacy -->
             </div>
         </div>
         <div class="team-member">
@@ -165,11 +178,16 @@
             <div class="team-info">
                 <h3>Rojan Maharjan</h3>
                 <p>780412</p>
-                <p>rojanmhj120@gmail.com</p>
+                <!-- ✅ CHANGE 3: Email removed for privacy -->
             </div>
         </div>
     </div>
 </section>
+
+<!-- ✅ CHANGE 2: Simple footer -->
+<footer class="site-footer">
+    <p>© 2025 &nbsp;·&nbsp; Multiple Access Using LoRa</p>
+</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ url_for('static', filename='scroll.js') }}"></script>
