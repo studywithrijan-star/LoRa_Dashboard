@@ -164,6 +164,12 @@
     let currentNode = "1";
     let delayChart, rssiChart, snrChart;
 
+    // Global axis ranges, computed once from ALL nodes' data combined,
+    // so the RSSI and SNR charts use the exact same scale no matter which
+    // node tab is active or how wide that node's own range happens to be.
+    let globalRssiMin = null, globalRssiMax = null;
+    let globalSnrMin  = null, globalSnrMax  = null;
+
     // ── helpers ────────────────────────────────────────────────────
     function parseTime(hms) {
         if (typeof hms !== 'string') return new Date(1970, 0, 1, 0, 0, 0);
@@ -211,6 +217,46 @@
         else               el.classList.add("loss-bad");
     }
 
+    // ── compute shared RSSI / SNR axis ranges across all nodes ─────
+    async function computeGlobalRanges() {
+        const nodeIds = ["1", "2", "3"];
+        let allRssi = [];
+        let allSnr  = [];
+
+        for (const id of nodeIds) {
+            try {
+                const res = await fetch(`/api/node${id}`);
+                let data = await res.json();
+                if (Array.isArray(data)) {
+                    data = data.slice(-30); // only consider the last 30 packets for axis scaling
+                    data.forEach(d => {
+                        const r = Number(d.RSSI);
+                        const s = Number(d.SNR);
+                        if (!isNaN(r)) allRssi.push(r);
+                        if (!isNaN(s)) allSnr.push(s);
+                    });
+                }
+            } catch (e) {
+                console.error(`Failed to fetch node${id} for range calc`, e);
+            }
+        }
+
+        if (allRssi.length) {
+            const min = Math.min(...allRssi);
+            const max = Math.max(...allRssi);
+            const pad = (max - min) * 0.1 || 2; // 10% padding, min 2 units
+            globalRssiMin = Math.floor(min - pad);
+            globalRssiMax = Math.ceil(max + pad);
+        }
+        if (allSnr.length) {
+            const min = Math.min(...allSnr);
+            const max = Math.max(...allSnr);
+            const pad = (max - min) * 0.1 || 2;
+            globalSnrMin = Math.floor(min - pad);
+            globalSnrMax = Math.ceil(max + pad);
+        }
+    }
+
     // ── chart init ─────────────────────────────────────────────────
     function createCharts() {
         if (delayChart) delayChart.destroy();
@@ -218,6 +264,31 @@
         if (snrChart)   snrChart.destroy();
 
         const commonOpts = { responsive: true, maintainAspectRatio: false };
+
+        // Fixed y-axis ranges (shared across all node tabs) so charts are
+        // directly comparable regardless of which node is displayed.
+        const rssiOpts = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: globalRssiMin ?? undefined,
+                    max: globalRssiMax ?? undefined,
+                    title: { display: true, text: 'RSSI (dBm)' }
+                }
+            }
+        };
+        const snrOpts = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: globalSnrMin ?? undefined,
+                    max: globalSnrMax ?? undefined,
+                    title: { display: true, text: 'SNR (dB)' }
+                }
+            }
+        };
 
         delayChart = new Chart(document.getElementById("delayChart").getContext("2d"), {
             type: 'line',
@@ -227,12 +298,12 @@
         rssiChart = new Chart(document.getElementById("rssiChart").getContext("2d"), {
             type: 'line',
             data: { labels: [], datasets: [{ label: 'RSSI (dBm)', data: [], borderColor: '#ef4444', tension: 0.2, fill: false }] },
-            options: commonOpts
+            options: rssiOpts
         });
         snrChart = new Chart(document.getElementById("snrChart").getContext("2d"), {
             type: 'line',
             data: { labels: [], datasets: [{ label: 'SNR (dB)', data: [], borderColor: '#10b981', tension: 0.2, fill: false }] },
-            options: commonOpts
+            options: snrOpts
         });
 
         // Reset overlays whenever charts are recreated
@@ -258,10 +329,16 @@
 
             showEmpty(false);
 
-            // ── Compute values (same logic as original) ────────────
-            const labels = data.map(d => d.PacketNo);
+            // Full dataset — used for summary stats (packets received/lost, averages)
+            const fullData = data;
 
-            const delayData = data.map(d => {
+            // Only the most recent 30 packets are plotted on the charts
+            const chartData = data.slice(-30);
+
+            // ── Compute chart values (last 30 only) ────────────────
+            const labels = chartData.map(d => d.PacketNo);
+
+            const delayData = chartData.map(d => {
                 const tx = parseTime(d.TX_Time);
                 const rx = parseTime(d.RX_Time);
                 let diff = rx - tx;
@@ -269,10 +346,11 @@
                 return diff;
             });
 
-            const rssiData = data.map(d => Number(d.RSSI) || 0);
-            const snrData  = data.map(d => Number(d.SNR)  || 0);
+            const rssiData = chartData.map(d => Number(d.RSSI) || 0);
+            const snrData  = chartData.map(d => Number(d.SNR)  || 0);
 
-            const packetNos = data.map(d => Number(d.PacketNo)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+            // ── Compute summary stats (full dataset) ───────────────
+            const packetNos = fullData.map(d => Number(d.PacketNo)).filter(n => !isNaN(n)).sort((a, b) => a - b);
             let lostPackets = 0;
             for (let i = 0; i < packetNos.length - 1; i++) {
                 lostPackets += Math.max(0, packetNos[i + 1] - packetNos[i] - 1);
@@ -281,9 +359,20 @@
             const packetsReceived   = packetNos.length;
             const totalPackets      = packetsReceived + lostPackets;
             const packetLossPct     = totalPackets > 0 ? (lostPackets / totalPackets) * 100 : 0;
-            const avgDelay          = (delayData.reduce((a, b) => a + b, 0) / packetsReceived).toFixed(2);
-            const avgRssi           = (rssiData.reduce((a, b)  => a + b, 0) / packetsReceived).toFixed(2);
-            const avgSnr            = (snrData.reduce((a, b)   => a + b, 0) / packetsReceived).toFixed(2);
+
+            const allDelays = fullData.map(d => {
+                const tx = parseTime(d.TX_Time);
+                const rx = parseTime(d.RX_Time);
+                let diff = rx - tx;
+                if (diff < 0) diff += 24 * 60 * 60 * 1000;
+                return diff;
+            });
+            const allRssi = fullData.map(d => Number(d.RSSI) || 0);
+            const allSnr  = fullData.map(d => Number(d.SNR)  || 0);
+
+            const avgDelay = (allDelays.reduce((a, b) => a + b, 0) / packetsReceived).toFixed(2);
+            const avgRssi  = (allRssi.reduce((a, b)  => a + b, 0) / packetsReceived).toFixed(2);
+            const avgSnr   = (allSnr.reduce((a, b)   => a + b, 0) / packetsReceived).toFixed(2);
 
             // ── Update charts ──────────────────────────────────────
             delayChart.data.labels = labels;
@@ -343,8 +432,16 @@
     buttons.forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.node)));
 
     // ── init ───────────────────────────────────────────────────────
-    activateTab(currentNode);
-    setInterval(() => updateCharts(currentNode), 15000);
+    // Compute the shared axis ranges once (from all nodes' data) before
+    // drawing the first chart, then start the periodic refresh.
+    (async function init() {
+        await computeGlobalRanges();
+        activateTab(currentNode);
+        setInterval(async () => {
+            await computeGlobalRanges();   // keep the shared range current as new data streams in
+            updateCharts(currentNode);
+        }, 15000);
+    })();
 </script>
 <script>
     document.getElementById("menuToggle").addEventListener("click", function() {

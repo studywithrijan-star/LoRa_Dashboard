@@ -27,9 +27,9 @@ function animateValue(id, newValue) {
 
     const interval = setInterval(() => {
         step++;
-        element.innerText = Math.round(current + increment * step);
+        element.innerText = (current + increment * step).toFixed(1);
         if (step >= steps) {
-            element.innerText = Math.round(target);
+            element.innerText = target.toFixed(1);
             clearInterval(interval);
         }
     }, stepTime);
@@ -55,7 +55,7 @@ function createChart(ctx, label, color, yLabel) {
                 legend: { display: true },
                 tooltip: {
                     callbacks: {
-                        label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.parsed.y)}`
+                        label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}`
                     }
                 }
             },
@@ -67,8 +67,9 @@ function createChart(ctx, label, color, yLabel) {
                 y: {
                     title: { display: true, text: yLabel },
                     ticks: {
-                        precision: 0,
-                        maxTicksLimit: 5
+                        maxTicksLimit: 6
+                        // no forced integer precision, so decimal gridlines
+                        // (e.g. 28.5, 29.0) can render when the data warrants it
                     }
                 }
             }
@@ -121,7 +122,7 @@ async function updateChart(url, chart, key, chartName, yLabel, latestId, nodeNum
         const latestVal = parseFloat(latestRow[key]);
         if (!isNaN(latestVal)) {
             const el = document.getElementById(latestId);
-            if (el && el.innerText !== String(Math.round(latestVal))) {
+            if (el && el.innerText !== latestVal.toFixed(1)) {
                 animateValue(latestId, latestVal);
             }
         }
@@ -145,7 +146,7 @@ async function updateChart(url, chart, key, chartName, yLabel, latestId, nodeNum
             newData.map(r => formatTime(r.TX_Time))
         );
         chart.data.datasets[0].data = chart.data.datasets[0].data.concat(
-            newData.map(r => Math.round(parseFloat(r[key])))
+            newData.map(r => parseFloat(r[key]))   // keep real decimal values, no rounding
         );
 
         if (chart.data.labels.length > 50) {
